@@ -1,17 +1,18 @@
 import { StrictMode } from "react";
-import { ItemView, Vault, WorkspaceLeaf } from "obsidian";
+import { ItemView, WorkspaceLeaf } from "obsidian";
 import { Root, createRoot } from "react-dom/client";
 import { EloCompareComponent } from "./EloCompareComponent";
+import { PluginInfo } from "main";
 
 export const VIEW_TYPE_ELO = "elo-compare-view";
 
 export class EloCompareView extends ItemView {
 	root: Root | null = null;
-	vault: Vault;
+	pluginInfo: PluginInfo;
 
-	constructor(leaf: WorkspaceLeaf, vault: Vault) {
+	constructor(leaf: WorkspaceLeaf, pluginInfo: PluginInfo) {
 		super(leaf);
-		this.vault = vault;
+		this.pluginInfo = pluginInfo;
 	}
 
 	getViewType() {
@@ -27,7 +28,7 @@ export class EloCompareView extends ItemView {
 		this.root = createRoot(this.contentEl);
 		this.root.render(
 			<StrictMode>
-				<EloCompareComponent vault={this.vault} />
+				<EloCompareComponent pluginInfo={this.pluginInfo} />
 			</StrictMode>
 		);
 	}

@@ -1,4 +1,4 @@
-import { App, Plugin, PluginSettingTab, Setting, ToggleComponent, TextComponent } from 'obsidian';
+import { App, Plugin, PluginSettingTab, Setting, ToggleComponent, TextComponent, MetadataCache, Vault } from 'obsidian';
 import { FolderSuggestModal } from 'src/FolderSuggestModal';
 import { EloCompareView, VIEW_TYPE_ELO } from 'src/EloCompareView';
 
@@ -7,13 +7,21 @@ import { EloCompareView, VIEW_TYPE_ELO } from 'src/EloCompareView';
 export type EloCompareSettings = {
 	mySetting: string;
 	includeSubfoldersByDefault?: boolean;
-	defaultFolder?: string;
+	defaultFolder: string;
+	frontmatterProperty: string;
 }
 
 export const DEFAULT_SETTINGS: EloCompareSettings = {
-	mySetting: 'default'
-	, includeSubfoldersByDefault: false
-	, defaultFolder: ''
+	mySetting: 'default',
+	includeSubfoldersByDefault: false,
+	defaultFolder: '',
+	frontmatterProperty: "rating"
+}
+
+export type PluginInfo = {
+	vault: Vault,
+	settings: EloCompareSettings
+	metadata: MetadataCache
 }
 
 export default class EloCompare extends Plugin {
@@ -23,7 +31,11 @@ export default class EloCompare extends Plugin {
 		await this.loadSettings();
 
 		// Register the React-based EloCompare view
-		this.registerView(VIEW_TYPE_ELO, (leaf) => new EloCompareView(leaf, this.app.vault));
+		this.registerView(VIEW_TYPE_ELO, (leaf) => new EloCompareView(leaf, {
+			vault: this.app.vault,
+			settings: this.settings,
+			metadata: this.app.metadataCache
+		}));
 
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('dice', 'Start Elo Compare', async (evt: MouseEvent) => {
