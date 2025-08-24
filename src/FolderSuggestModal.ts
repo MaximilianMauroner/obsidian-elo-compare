@@ -1,5 +1,4 @@
 import { App, FuzzySuggestModal } from "obsidian";
-
 export class FolderSuggestModal extends FuzzySuggestModal<string> {
     private onChooseFn: (folder: string) => void;
 

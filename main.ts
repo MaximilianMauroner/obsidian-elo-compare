@@ -1,6 +1,6 @@
-import { App, MarkdownView, Plugin, PluginSettingTab, Setting, ToggleComponent, TextComponent } from 'obsidian';
-import { EloCompareModal } from 'src/EloCompareModal';
+import { App, Plugin, PluginSettingTab, Setting, ToggleComponent, TextComponent } from 'obsidian';
 import { FolderSuggestModal } from 'src/FolderSuggestModal';
+import { EloCompareView, VIEW_TYPE_ELO } from 'src/EloCompareView';
 
 // Remember to rename these classes and interfaces!
 
@@ -22,44 +22,50 @@ export default class EloCompare extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
+		// Register the React-based EloCompare view
+		this.registerView(VIEW_TYPE_ELO, (leaf) => new EloCompareView(leaf, this.app.vault));
+
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Start Elo Compare', (evt: MouseEvent) => {
+		const ribbonIconEl = this.addRibbonIcon('dice', 'Start Elo Compare', async (evt: MouseEvent) => {
 			// Open the Elo compare modal when the ribbon icon is clicked
-			new EloCompareModal(this.app, this.settings).open();
+			const leaf = this.app.workspace.getLeaf(false);
+			await leaf.setViewState({ type: VIEW_TYPE_ELO });
+			this.app.workspace.revealLeaf(leaf);
+		});
+
+		// Command to open the React-based Elo Compare view
+		this.addCommand({
+			id: 'start-elo-compare',
+			name: 'Start elo compare',
+			callback: async () => {
+				// Ensure a default folder is configured in settings before opening the view.
+				const openView = async () => {
+					const leaf = this.app.workspace.getLeaf(false);
+					await leaf.setViewState({ type: VIEW_TYPE_ELO });
+					this.app.workspace.revealLeaf(leaf);
+				};
+
+				if (!this.settings || !this.settings.defaultFolder) {
+					// Prompt the user to pick a folder first
+					new FolderSuggestModal(this.app, async (chosenPath: string) => {
+						// Save chosen folder to settings and then open the view
+						this.settings.defaultFolder = chosenPath;
+						await this.saveSettings();
+						await openView();
+					}).open();
+					return;
+				}
+
+				// Settings already configured, just open the view
+				await openView();
+			}
 		});
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
 		// This adds a complex command that can check whether the current state of the app allows execution of the command
-		this.addCommand({
-			id: 'start-elo-compare',
-			name: 'Start elo compare',
-			checkCallback: (checking: boolean) => {
-				// Conditions to check
-				const markdownView = this.app.workspace.getActiveViewOfType(MarkdownView);
-				if (markdownView) {
-					// If checking is true, we're simply "checking" if the command can be run.
-					// If checking is false, then we want to actually perform the operation.
-					if (!checking) {
-						new EloCompareModal(this.app, this.settings).open();
-					}
-
-					// This command will only show up in Command Palette when the check function returns true
-					return true;
-				}
-			}
-		});
 
 		// This adds a settings tab so the user can configure various aspects of the plugin
 		this.addSettingTab(new EloCompareSettingTab(this.app, this));
-
-		// If the plugin hooks up any global DOM events (on parts of the app that doesn't belong to this plugin)
-		// Using this function will automatically remove the event listener when this plugin is disabled.
-		this.registerDomEvent(document, 'click', (evt: MouseEvent) => {
-			console.log('click', evt);
-		});
-
-		// When registering intervals, this function will automatically clear the interval when the plugin is disabled.
-		this.registerInterval(window.setInterval(() => console.log('setInterval'), 5 * 60 * 1000));
 	}
 
 	onunload() {
