@@ -1,4 +1,13 @@
-import { App, Plugin, PluginSettingTab, Setting, ToggleComponent, TextComponent, MetadataCache, Vault } from 'obsidian';
+import {
+	App,
+	Plugin,
+	PluginSettingTab,
+	Setting,
+	ToggleComponent,
+	TextComponent,
+	MetadataCache,
+	Vault,
+} from 'obsidian';
 import { FolderSuggestModal } from 'src/FolderSuggestModal';
 import { EloCompareView, VIEW_TYPE_ELO } from 'src/EloCompareView';
 
@@ -9,20 +18,20 @@ export type EloCompareSettings = {
 	includeSubfoldersByDefault?: boolean;
 	defaultFolder: string;
 	frontmatterProperty: string;
-}
+};
 
 export const DEFAULT_SETTINGS: EloCompareSettings = {
 	mySetting: 'default',
 	includeSubfoldersByDefault: false,
 	defaultFolder: '',
-	frontmatterProperty: "rating"
-}
+	frontmatterProperty: 'rating',
+};
 
 export type PluginInfo = {
-	vault: Vault,
-	settings: EloCompareSettings
-	metadata: MetadataCache
-}
+	vault: Vault;
+	settings: EloCompareSettings;
+	metadata: MetadataCache;
+};
 
 export default class EloCompare extends Plugin {
 	settings: EloCompareSettings;
@@ -31,19 +40,27 @@ export default class EloCompare extends Plugin {
 		await this.loadSettings();
 
 		// Register the React-based EloCompare view
-		this.registerView(VIEW_TYPE_ELO, (leaf) => new EloCompareView(leaf, {
-			vault: this.app.vault,
-			settings: this.settings,
-			metadata: this.app.metadataCache
-		}));
+		this.registerView(
+			VIEW_TYPE_ELO,
+			(leaf) =>
+				new EloCompareView(leaf, {
+					vault: this.app.vault,
+					settings: this.settings,
+					metadata: this.app.metadataCache,
+				})
+		);
 
 		// This creates an icon in the left ribbon.
-		const ribbonIconEl = this.addRibbonIcon('dice', 'Start Elo Compare', async (evt: MouseEvent) => {
-			// Open the Elo compare modal when the ribbon icon is clicked
-			const leaf = this.app.workspace.getLeaf(false);
-			await leaf.setViewState({ type: VIEW_TYPE_ELO });
-			this.app.workspace.revealLeaf(leaf);
-		});
+		const ribbonIconEl = this.addRibbonIcon(
+			'dice',
+			'Start Elo Compare',
+			async (evt: MouseEvent) => {
+				// Open the Elo compare modal when the ribbon icon is clicked
+				const leaf = this.app.workspace.getLeaf(false);
+				await leaf.setViewState({ type: VIEW_TYPE_ELO });
+				this.app.workspace.revealLeaf(leaf);
+			}
+		);
 
 		// Command to open the React-based Elo Compare view
 		this.addCommand({
@@ -70,7 +87,7 @@ export default class EloCompare extends Plugin {
 
 				// Settings already configured, just open the view
 				await openView();
-			}
+			},
 		});
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
@@ -80,9 +97,7 @@ export default class EloCompare extends Plugin {
 		this.addSettingTab(new EloCompareSettingTab(this.app, this));
 	}
 
-	onunload() {
-
-	}
+	onunload() { }
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
@@ -91,10 +106,8 @@ export default class EloCompare extends Plugin {
 	async saveSettings() {
 		await this.saveData(this.settings);
 	}
+
 }
-
-
-
 
 class EloCompareSettingTab extends PluginSettingTab {
 	plugin: EloCompare;
@@ -113,28 +126,34 @@ class EloCompareSettingTab extends PluginSettingTab {
 		const includeSubToggleSetting = new Setting(containerEl)
 			.setName('Include subfolders by default')
 			.setDesc('When opening the Elo modal, include subfolders automatically')
-			.addToggle(toggle => toggle
-				.setValue(!!this.plugin.settings.includeSubfoldersByDefault)
-				.onChange(async (value) => {
-					this.plugin.settings.includeSubfoldersByDefault = value;
-					await this.plugin.saveSettings();
-				}))
-			.addExtraButton(button => button
-				.setIcon('reset')
-				.setTooltip('Reset to default')
-				.onClick(async () => {
-					this.plugin.settings.includeSubfoldersByDefault = !!DEFAULT_SETTINGS.includeSubfoldersByDefault;
-					await this.plugin.saveSettings();
-					const t = includeSubToggleSetting.components[0] as ToggleComponent | undefined;
-					if (t) t.setValue(!!DEFAULT_SETTINGS.includeSubfoldersByDefault);
-				}));
+			.addToggle((toggle) =>
+				toggle
+					.setValue(!!this.plugin.settings.includeSubfoldersByDefault)
+					.onChange(async (value) => {
+						this.plugin.settings.includeSubfoldersByDefault = value;
+						await this.plugin.saveSettings();
+					})
+			)
+			.addExtraButton((button) =>
+				button
+					.setIcon('reset')
+					.setTooltip('Reset to default')
+					.onClick(async () => {
+						this.plugin.settings.includeSubfoldersByDefault =
+							!!DEFAULT_SETTINGS.includeSubfoldersByDefault;
+						await this.plugin.saveSettings();
+						const t = includeSubToggleSetting.components[0] as
+							| ToggleComponent
+							| undefined;
+						if (t) t.setValue(!!DEFAULT_SETTINGS.includeSubfoldersByDefault);
+					})
+			);
 
 		const defaultFolderSetting = new Setting(containerEl)
 			.setName('Default folder for Elo')
 			.setDesc('A default folder to preselect when opening the Elo modal')
-			.addText(text => {
-				text
-					.setPlaceholder('Leave empty for root')
+			.addText((text) => {
+				text.setPlaceholder('Leave empty for root')
 					.setValue(this.plugin.settings.defaultFolder || '')
 					.onChange(async (value) => {
 						this.plugin.settings.defaultFolder = value;
@@ -142,24 +161,30 @@ class EloCompareSettingTab extends PluginSettingTab {
 					});
 				return text;
 			})
-			.addButton(btn => btn
-				.setButtonText('Browse')
-				.onClick(() => {
+			.addButton((btn) =>
+				btn.setButtonText('Browse').onClick(() => {
 					new FolderSuggestModal(this.app, async (chosenPath: string) => {
 						this.plugin.settings.defaultFolder = chosenPath;
-						const textComp = defaultFolderSetting.components[0] as TextComponent | undefined;
+						const textComp = defaultFolderSetting.components[0] as
+							| TextComponent
+							| undefined;
 						if (textComp) textComp.setValue(chosenPath);
 						await this.plugin.saveSettings();
 					}).open();
-				}))
-			.addExtraButton(button => button
-				.setIcon('reset')
-				.setTooltip('Reset to default')
-				.onClick(async () => {
-					this.plugin.settings.defaultFolder = DEFAULT_SETTINGS.defaultFolder || '';
-					await this.plugin.saveSettings();
-					const textComp = defaultFolderSetting.components[0] as TextComponent | undefined;
-					if (textComp) textComp.setValue(DEFAULT_SETTINGS.defaultFolder || '');
-				}));
+				})
+			)
+			.addExtraButton((button) =>
+				button
+					.setIcon('reset')
+					.setTooltip('Reset to default')
+					.onClick(async () => {
+						this.plugin.settings.defaultFolder = DEFAULT_SETTINGS.defaultFolder || '';
+						await this.plugin.saveSettings();
+						const textComp = defaultFolderSetting.components[0] as
+							| TextComponent
+							| undefined;
+						if (textComp) textComp.setValue(DEFAULT_SETTINGS.defaultFolder || '');
+					})
+			);
 	}
 }

@@ -1,10 +1,10 @@
-import { StrictMode } from "react";
-import { ItemView, WorkspaceLeaf } from "obsidian";
-import { Root, createRoot } from "react-dom/client";
-import { EloCompareComponent } from "./EloCompareComponent";
-import { PluginInfo } from "main";
+import { StrictMode } from 'react';
+import { ItemView, WorkspaceLeaf } from 'obsidian';
+import { Root, createRoot } from 'react-dom/client';
+import { EloCompareComponent } from './EloCompareComponent';
+import { PluginInfo } from 'main';
 
-export const VIEW_TYPE_ELO = "elo-compare-view";
+export const VIEW_TYPE_ELO = 'elo-compare-view';
 
 export class EloCompareView extends ItemView {
 	root: Root | null = null;
@@ -20,7 +20,7 @@ export class EloCompareView extends ItemView {
 	}
 
 	getDisplayText() {
-		return "Elo Compare";
+		return 'Elo Compare';
 	}
 
 	async onOpen() {
