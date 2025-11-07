@@ -31,6 +31,7 @@ export type PluginInfo = {
 	vault: Vault;
 	settings: EloCompareSettings;
 	metadata: MetadataCache;
+	app: App;
 };
 
 export default class EloCompare extends Plugin {
@@ -47,6 +48,7 @@ export default class EloCompare extends Plugin {
 					vault: this.app.vault,
 					settings: this.settings,
 					metadata: this.app.metadataCache,
+					app: this.app,
 				})
 		);
 
@@ -98,6 +100,7 @@ export default class EloCompare extends Plugin {
 	}
 
 	onunload() { }
+
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
