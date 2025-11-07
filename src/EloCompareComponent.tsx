@@ -13,32 +13,14 @@ import {
 import { readStore, writeStore } from './storage';
 
 export interface SelectedFile {
-	id: string; // stable id (file path)
+	id: string;
 	file: TFile;
 	frontmatter: FrontMatterCache | null;
 	name: string;
-	rating: number; // ELO rating (0-1000 scale, can exceed)
+	rating: number;
 	games: number;
 	pool: string;
 	last?: string;
-}
-
-function getEloDataFromStore(filePath: string, store: StoreType, defaultPool: string): FileEloData {
-	const stored = store.ratings[filePath];
-	if (stored) {
-		return {
-			rating: stored.rating ?? DEFAULT_RATING,
-			games: stored.games ?? 0,
-			pool: stored.pool ?? defaultPool,
-			last: stored.last,
-		};
-	}
-	// Return default if not in store
-	return {
-		rating: DEFAULT_RATING,
-		games: 0,
-		pool: defaultPool,
-	};
 }
 
 export const EloCompareComponent = ({ pluginInfo }: { pluginInfo: PluginInfo }) => {
@@ -134,18 +116,17 @@ export const EloCompareComponent = ({ pluginInfo }: { pluginInfo: PluginInfo }) 
 			const promises = candidates.map(async (file) => {
 				try {
 					const info = getFileInfo(file);
-					// Get ELO data from store instead of frontmatter
-					if (!store) return null;
-					const eloData = getEloDataFromStore(file.path, store, defaultPool);
+					// Use default ELO data - ratings will be updated from store
+					// in a separate effect after store loads (see useEffect at line 539)
+					// This allows files to be loaded immediately without waiting for store
 					return {
 						id: file.path,
 						file: info.file,
 						name: file.basename,
 						frontmatter: info.frontmatter,
-						rating: eloData.rating,
-						games: eloData.games,
-						pool: eloData.pool,
-						last: eloData.last,
+						rating: DEFAULT_RATING,
+						games: 0,
+						pool: defaultPool,
 					} as SelectedFile;
 				} catch (e) {
 					console.error('[EloCompare] Error processing file:', file.path, e);
@@ -157,7 +138,7 @@ export const EloCompareComponent = ({ pluginInfo }: { pluginInfo: PluginInfo }) 
 			const validResults = results.filter((r): r is SelectedFile => !!r);
 			return validResults;
 		},
-		[settings, metadata, defaultPool, store]
+		[settings, metadata, defaultPool]
 	);
 
 	// Load/persist plugin store (events) if provided by PluginInfo
@@ -410,6 +391,10 @@ export const EloCompareComponent = ({ pluginInfo }: { pluginInfo: PluginInfo }) 
 	}, [selectedFiles, store?.events, store?.ratings, kFactor]);
 
 	const handleWin = (winnerIndex: number) => {
+		// Early return if store is not loaded to prevent data loss
+		// The comparison should only be recorded when we can persist it
+		if (!store) return;
+
 		const aIdx = pair[0];
 		const bIdx = pair[1];
 		const aWins: Outcome = winnerIndex === aIdx ? 1 : 0;
@@ -435,8 +420,6 @@ export const EloCompareComponent = ({ pluginInfo }: { pluginInfo: PluginInfo }) 
 		});
 
 		setItems(newItems);
-
-		if (!store) return;
 
 		// Update store.ratings
 		const newRatings: Record<string, FileEloData> = { ...store.ratings };
@@ -563,7 +546,25 @@ export const EloCompareComponent = ({ pluginInfo }: { pluginInfo: PluginInfo }) 
 				events: [],
 				ratings: {},
 			};
-			void persistStore(resetStore);
+			await persistStore(resetStore);
+
+			// Update items state to reflect reset ratings
+			// The useEffect won't run again due to hasInitializedRef, so we update directly
+			if (selectedFiles && selectedFiles.length > 0) {
+				const resetItems = selectedFiles.map((file) => ({
+					...file,
+					rating: DEFAULT_RATING,
+					games: 0,
+					last: undefined,
+				}));
+				setItems(resetItems);
+			}
+
+			// Clear history
+			setHistory([]);
+
+			// Reset the initialization flag so future store changes can trigger the effect
+			hasInitializedRef.current = false;
 		} catch (e) {
 			console.error('Failed to reset', e);
 			alert('Error resetting. Check console for details.');
