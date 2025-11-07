@@ -2,7 +2,7 @@ import { StrictMode } from 'react';
 import { ItemView, WorkspaceLeaf } from 'obsidian';
 import { Root, createRoot } from 'react-dom/client';
 import { EloCompareComponent } from './EloCompareComponent';
-import { PluginInfo } from 'main';
+import type { PluginInfo } from './types';
 
 export const VIEW_TYPE_ELO = 'elo-compare-view';
 

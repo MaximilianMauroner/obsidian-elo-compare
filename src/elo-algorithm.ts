@@ -1,38 +1,12 @@
-import { SelectedFile } from './EloCompareComponent';
+import type { Outcome, EloEvent, FileEloData, StoreType, HistoryType } from './types';
+import { DEFAULT_RATING, DEFAULT_K_FACTOR } from './constants';
 
 export const SKIP_RATING = -1;
-export const DEFAULT_RATING = 1000; // Default ELO rating (0-1000 scale)
+// Re-export DEFAULT_RATING for backward compatibility
+export { DEFAULT_RATING };
 
-export type Outcome = 0 | 0.5 | 1; // score for "a"
-
-export interface EloEvent {
-	t: number; // timestamp
-	a: string; // id of item a (e.g., file path)
-	b: string; // id of item b
-	s: Outcome; // outcome for a (1 win, 0 loss, 0.5 draw)
-}
-
-export interface FileEloData {
-	rating: number;
-	games: number;
-	pool: string;
-	last?: string;
-}
-
-export interface StoreType {
-	version: 1;
-	events: EloEvent[]; // append-only
-	ratings: Record<string, FileEloData>; // file path -> ELO data
-}
-
-export type HistoryType = {
-	winner: SelectedFile;
-	loser: SelectedFile;
-	winnerOldRating: number;
-	winnerNewRating: number;
-	loserOldRating: number;
-	loserNewRating: number;
-};
+// Re-export types for backward compatibility
+export type { Outcome, EloEvent, FileEloData, StoreType, HistoryType };
 
 function expectedScore(rA: number, rB: number): number {
 	// Standard ELO expected score formula
@@ -45,7 +19,7 @@ export function eloUpdate(
 	rA: number,
 	rB: number,
 	sA: Outcome,
-	k = 32 // Standard K-factor for ELO (can be adjusted)
+	k = DEFAULT_K_FACTOR // Standard K-factor for ELO (can be adjusted)
 ): readonly [number, number] {
 	const eA = expectedScore(rA, rB);
 	const eB = 1 - eA;
